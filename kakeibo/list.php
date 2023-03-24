@@ -2,13 +2,35 @@
 require_once '../common/DbManager.php';
 require_once '../common/Encode.php';
 
+session_start();
+
+if (!isset($_SESSION['year_month'])) {
+    $_SESSION['year_month'] = new DateTime();
+}
+if (!isset($_SESSION['month_interval'])) {
+    $_SESSION['month_interval'] = new DateInterval('P1M');
+}
+
+if (isset($_GET['back'])) {
+    $_SESSION['year_month']->sub($_SESSION['month_interval']);
+}
+if (isset($_GET['go'])) {
+    $_SESSION['year_month']->add($_SESSION['month_interval']);
+}
+
 try {
     $db = getDb();
     $sql = "SELECT K.id, K.日付, H.費目名, K.メモ, K.入金額, K.出金額
             FROM 家計簿 AS K
                 INNER JOIN 費目 AS H ON K.費目id = H.id
-                ORDER BY 日付";
+            WHERE 
+                YEAR(K.日付) = :year
+                AND
+                MONTH(K.日付) = :month
+            ORDER BY 日付";
     $stt = $db->prepare($sql);
+    $stt->bindValue(':year', $_SESSION['year_month']->format('Y'));
+    $stt->bindValue(':month', $_SESSION['year_month']->format('m'));
     $stt->execute();
 } catch(PDOException $e) {
     die('エラーメッセージ: ' . $e->getMessage());
@@ -35,6 +57,13 @@ try {
         }
     ?>
     </p>
+    <form method="get" action="">
+        <span><input type="submit" name="back" value="前月"></span>
+        <?php
+            print($_SESSION['year_month']->format("Y年m月"));
+        ?>
+        <span><input type="submit" name="go" value="次月"></span>
+    </form>
     <table class="table table-striped">
         <thead>
             <tr>

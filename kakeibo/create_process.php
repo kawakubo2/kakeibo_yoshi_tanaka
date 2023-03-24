@@ -9,9 +9,11 @@ $_SESSION['insert_memo']     = $_POST['memo'];
 $_SESSION['insert_income']   = $_POST['income'];
 $_SESSION['insert_expense']   = $_POST['expense'];
 
+/*
 print('<pre>');
 print_r($_SESSION);
 print('</pre>');
+*/
 
 ///////////////////////////////////////////////////
 // 入力値検証(バリデーション機能)
@@ -76,6 +78,16 @@ if (count($errors) > 0) {
 ///////////////////////////////////////////////////
 try {
     $db = getDb();
+    /*
+     SQLインジェクション対策
+     SQL文に直接、文字列結合でデータを連結せず、言語やフレームワーク
+     が持つ、安全な方法でSQLにデータを流し込む。その時、後からデータを
+     流し込むための目印とするもののことをプレースホルダーと呼ぶ。
+     下記の例であれは、:date、:categoryなど
+     PHP自体が持つPDOStatementのbindValueが安全にデータを流し込んで
+     くれる。言語やフレームワークによって使用する関数やメソッド名は
+     違うが目的は悪意のあるコードを無害化すること。
+    */
     $sql = "INSERT INTO 家計簿(日付, 費目id, メモ, 入金額, 出金額)
             VALUES(:date, :category, :memo, :income, :expense)";
     $stt = $db->prepare($sql);
