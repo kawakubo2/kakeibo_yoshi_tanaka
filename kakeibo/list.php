@@ -44,6 +44,7 @@ try {
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="../css/main.css" />
     <title>山田さんちの家計簿</title>
 </head>
 <body>
@@ -71,7 +72,13 @@ try {
             </tr>    
         </thead>
         <tbody>
-        <?php while ($row = $stt->fetch(PDO::FETCH_ASSOC)) { ?>
+        <?php 
+        $income_total = 0;
+        $expense_total = 0;
+        while ($row = $stt->fetch(PDO::FETCH_ASSOC)) { 
+            $income_total  += $row['入金額'];
+            $expense_total += $row['出金額'];    
+        ?>
             <tr>
                 <td><?=e($row['日付']) ?></td>
                 <td><?=e($row['費目名']) ?></td>
@@ -82,8 +89,18 @@ try {
                     <a href="update_form.php?id=<?=e($row['id']) ?>" class="btn btn-secondary ml-2">編集</a>
                     <a href="delete_form.php?id=<?=e($row['id']) ?>" class="btn btn-danger ml-2">削除</a>
                 </td>
-        <?php } ?>
+        <?php 
+        } 
+        ?>
         </tbody>
+        <tfoot>
+            <tr class="kakeibo_total">
+                <td colspan="3"></td>
+                <td><?=$income_total ?></td>
+                <td><?=$expense_total ?></td>
+                <td></td>
+            </tr>
+        </tfoot>
     </table> 
 </body>
 </html>
