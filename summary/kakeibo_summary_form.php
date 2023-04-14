@@ -4,7 +4,7 @@ require_once '../common/Encode.php';
 
 session_start();
 
-if (!isset($_SESSION['summary_years'])) {
+if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun'])) {
     try {
         $db = getDb();
         $sql = "SELECT DISTINCT year(日付) AS 年
@@ -17,6 +17,17 @@ if (!isset($_SESSION['summary_years'])) {
             $years[] = $row['年'];
         }
         $_SESSION['summary_years'] = $years;
+
+        $income_expense_kubun = []; // キー:費目名 値:入出金区分
+        $category_sql = "SELECT 費目名, 入出金区分
+                         FROM 費目
+                         ORDER BY id";
+        $category_stt = $db->prepare($category_sql);
+        $category_stt->execute();
+        while ($row = $category_stt->fetch(PDO::FETCH_ASSOC)) {
+            $income_expense_kubun[$row['費目名']] = $row['入出金区分'];
+        }
+        $_SESSION['income_expense_kubun'] = $income_expense_kubun;
     } catch (PDOException $e) {
         die('エラーメッセージ: ' . $e->getMessage());
     }
@@ -69,9 +80,25 @@ if (!isset($_SESSION['summary_years'])) {
         </thead>
         <tbody>
         <?php
-
-
+            $income_totals = [];
+            $expense_totals = [];
+            for ($month = 1; $month <= 12; $month++) {
+                $income_totals[$month] = 0;
+                $expense_totals[$month] = 0;
+            }
         ?>
+        <?php foreach ($_SESSION['summary_result'] as $category_name => $summary_data) { ?>
+            <tr>
+                <th><?=e($category_name) ?></th>
+                <?php $category_total = 0; ?>
+                <?php for ($month = 1; $month <= 12; $month++) { 
+                    $category_total += $summary_data[$month];    
+                ?>
+                    <td><?=e($summary_data[$month]) ?></td>
+                <?php } ?>
+                <td><?=e($category_total) ?></td>
+            </tr>
+        <?php } ?>
         </tbody>
     </table>
     <?php } ?>
