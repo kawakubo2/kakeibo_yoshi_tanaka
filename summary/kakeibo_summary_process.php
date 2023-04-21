@@ -4,12 +4,19 @@ require_once '../common/DbManager.php';
 session_start();
 
 $_SESSION['search_year'] = $_GET['search_year'];
+$_SESSION['start_month'] = $_GET['start_month'];
+$_SESSION['end_month'] = $_GET['end_month'];
 
 // 入力値検証
 $errors = [];
 if (trim($_SESSION['search_year']) === '') {
     $errors[] = '年は必須選択です';
 }
+
+if ($_SESSION['start_month'] > $_SESSION['end_month']) {
+    $errors[] = '開始月は終了月より前の月を選択してください。';
+}
+
 if (count($errors) > 0) {
     $_SESSION['summary_errors'] = $errors;
     header('Location: http://' . $_SERVER['HTTP_HOST'] . '/summary/kakeibo_summary_form.php');
