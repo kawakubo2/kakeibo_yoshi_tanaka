@@ -29,11 +29,16 @@ try {
             FROM 家計簿 AS K
                 INNER JOIN 費目 AS H
                     ON K.費目id = H.id
-            WHERE YEAR(K.日付) = :year
+            WHERE 
+                YEAR(K.日付) = :year
+                AND
+                MONTH(K.日付) >= :start_month AND MONTH(K.日付) <= :end_month
             GROUP BY H.費目名, MONTH(K.日付)
             ORDER BY H.費目名, MONTH(K.日付)";
     $stt = $db->prepare($sql);
     $stt->bindValue(':year', $_SESSION['search_year']);
+    $stt->bindValue(':start_month', $_SESSION['start_month']);
+    $stt->bindValue(':end_month', $_SESSION['end_month']);
     $stt->execute();
     $result = [];
     /*

@@ -23,14 +23,22 @@ try {
     $sql = "SELECT K.id, K.日付, H.費目名, K.メモ, K.入金額, K.出金額
             FROM 家計簿 AS K
                 INNER JOIN 費目 AS H ON K.費目id = H.id
-            WHERE 
-                YEAR(K.日付) = :year
+            WHERE ";
+    if (isset($_GET['go']) || isset($_GET['back'])) {
+        $sql .=  "YEAR(K.日付) = :year
                 AND
-                MONTH(K.日付) = :month
-            ORDER BY 日付";
+                MONTH(K.日付) = :month ";
+    } else {
+        $sql .= "日付 = :date ";
+    }
+    $sql .= "ORDER BY 日付";
     $stt = $db->prepare($sql);
-    $stt->bindValue(':year', $_SESSION['year_month']->format('Y'));
-    $stt->bindValue(':month', $_SESSION['year_month']->format('m'));
+    if (isset($_GET['go']) || isset($_GET['back'])) {
+        $stt->bindValue(':year', $_SESSION['year_month']->format('Y'));
+        $stt->bindValue(':month', $_SESSION['year_month']->format('m'));
+    } else {
+        $stt->bindValue(':date', $_GET['calendar_date']);
+    }
     $stt->execute();
 } catch(PDOException $e) {
     die('エラーメッセージ: ' . $e->getMessage());
@@ -65,6 +73,10 @@ try {
         ?>
         <span><input type="submit" name="go" value="次月"></span>
     </form>
+    <form method="get" action="">
+        日付指定: <input type="date" name="calendar_date" id="calendar_date">
+        <input type="submit" name="date" value="検索">
+    </form>
     <table class="table table-striped">
         <thead>
             <tr>
@@ -82,7 +94,7 @@ try {
             <tr>
                 <td><?=e($row['日付']) ?></td>
                 <td><?=e($row['費目名']) ?></td>
-                <td><?=e($row['メモ']) ?></td>
+                <td><?=e($row['メモ']?:"") ?></td>
                 <td><?=e($row['入金額']) ?></td>
                 <td><?=e($row['出金額']) ?></td>
                 <td>

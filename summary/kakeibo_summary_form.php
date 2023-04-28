@@ -33,6 +33,11 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
     }
 }
 
+if (!isset($_SESSION['start_month']) && !isset($_SESSION['end_month'])) {
+    $_SESSION['start_month'] = 1;
+    $_SESSION['end_month'] = 12;
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -46,6 +51,16 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
 </head>
 <body>
     <h2>家計簿集計</h2>
+    <ul id="error_summary">
+    <?php
+        if (isset($_SESSION['summary_errors'])) {
+            foreach ($_SESSION['summary_errors'] as $error) {
+                print("<li>{$error}</li>");
+            }
+            unset($_SESSION['summary_errors']);
+        }    
+    ?>
+    </ul>
     <form method="get" action="kakeibo_summary_process.php">
         <div>
         <label>
@@ -69,14 +84,16 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
         <label>
             &nbsp;&nbsp;検索月: 
             <select name="start_month">
-            <?php for ($month = 1; $month <= 12; $month++) { ?>
-                    <option value="<?=$month ?>"><?=$month ?></option>
+            <?php for ($month = 1; $month <= 12; $month++) { 
+                    $prop = ($month == $_SESSION['start_month']) ? 'selected': '';   
+            ?>
+                    <option value="<?=$month ?>" <?=$prop ?> ><?=$month ?></option>
             <?php } ?>
             </select>
             月 ～ 
             <select name="end_month">
             <?php for ($month = 1; $month <= 12; $month++) { 
-                    $prop = ($month === 12) ? 'selected': '';    
+                    $prop = ($month == $_SESSION['end_month']) ? 'selected': '';    
             ?>
                     <option value="<?=$month ?>" <?=$prop ?> ><?=$month ?></option>
             <?php } ?>
@@ -87,12 +104,13 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
         <input type="submit" value="集計" />
     </form>
     <hr>
-    <?php if (isset($_SESSION['summary_result'])) { ?>
+    <?php if (isset($_SESSION['summary_result']) && count($_SESSION['summary_result']) > 0 &&
+        $_SESSION['start_month'] <= $_SESSION['end_month']) { ?>
     <table class="table table-striped">
         <thead>
             <tr>
                 <th>費目</th>
-                <?php for ($month = 1; $month <= 12; $month++) { ?>
+                <?php for ($month = $_SESSION['start_month']; $month <= $_SESSION['end_month']; $month++) { ?>
                     <th><?=$month ?>月</th>
                 <?php } ?>
                 <th>合計</th>
@@ -107,33 +125,41 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
                 $expense_totals[$month] = 0;
             }
         ?>
-        <?php foreach ($_SESSION['summary_result'] as $category_name => $summary_data) { ?>
+
+        <?php 
+            foreach ($_SESSION['summary_result'] as $category_name => $summary_data) {
+                if (is_array($summary_data)) {
+        ?>
             <tr>
                 <th><?=e($category_name) ?></th>
                 <?php $category_total = 0; ?>
                 <?php 
-                    for ($month = 1; $month <= 12; $month++) { 
+                    for ($month = $_SESSION['start_month']; $month <= $_SESSION['end_month']; $month++) { 
                         if ($_SESSION['income_expense_kubun'][$category_name] === '出金') {
-                            $expense_totals[$month] += $summary_data[$month];
+                            $expense_totals[$month] += isset($summary_data[$month]) ? $summary_data[$month] : 0;
                         } else {
-                            $income_totals[$month] += $summary_data[$month];
+                            $income_totals[$month] += isset($summary_data[$month]) ? $summary_data[$month] : 0;
                         }
-                        $category_total += $summary_data[$month];
+                        $category_total += isset($summary_data[$month]) ? $summary_data[$month] : 0;
                 ?>
-                        <td><?=e($summary_data[$month]) ?></td>
+                        <td><?=e(isset($summary_data[$month]) ? $summary_data[$month]: 0) ?></td>
                 <?php 
                     } 
                 ?>
                 <td><?=e($category_total) ?></td>
             </tr>
-        <?php } ?>
+        <?php 
+                }
+            } 
+        ?>
         </tbody>
         <tfoot>
+
             <tr>
                 <th>入金額合計</th>
                 <?php
                     $income_year_total =  0;
-                    for ($month = 1; $month <= 12; $month++) {
+                    for ($month = $_SESSION['start_month']; $month <= $_SESSION['end_month']; $month++) {
                         $income_year_total += $income_totals[$month];
                 ?>
                     <td><?=$income_totals[$month] ?></td>
@@ -146,7 +172,7 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
                 <th>出金額合計</th>
                 <?php
                     $expense_year_total =  0;
-                    for ($month = 1; $month <= 12; $month++) {
+                    for ($month = $_SESSION['start_month']; $month <= $_SESSION['end_month']; $month++) {
                         $expense_year_total += $expense_totals[$month];
                 ?>
                     <td><?=$expense_totals[$month] ?></td>
@@ -159,7 +185,7 @@ if (!isset($_SESSION['summary_years']) || !isset($_SESSION['income_expense_kubun
                 <th>収支</th>
                 <?php
                     $grand_balance = 0;
-                    for ($month = 1; $month <= 12; $month++) {
+                    for ($month = $_SESSION['start_month']; $month <= $_SESSION['end_month']; $month++) {
                         $difference = ($income_totals[$month] - $expense_totals[$month]);
                         $grand_balance += $difference; 
                 ?>
